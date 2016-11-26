@@ -1,13 +1,14 @@
 package core.base;
 
+import core.contracts.Presenter;
 import javafx.stage.Stage;
 
-abstract public class BasePresenter<T extends BaseViewController>
+abstract public class BasePresenter<T extends BaseViewController> implements Presenter<T>
 {
     /**
      * The presenter's view controller
      */
-    private T viewController;
+    protected T viewController;
 
     /**
      * Constructor

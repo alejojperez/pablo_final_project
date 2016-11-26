@@ -1,17 +1,17 @@
 package app.presenters;
 
-import app.views.controllers.MainViewController;
+import app.views.MasterDetailView;
 import com.google.inject.Inject;
 import core.base.BasePresenter;
 
-public class MainPresenter extends BasePresenter<MainViewController>
+public class MasterDetailPresenter extends BasePresenter<MasterDetailView>
 {
     /**
      * Constructor
      * @param mainViewController
      */
     @Inject
-    public MainPresenter(MainViewController mainViewController)
+    public MasterDetailPresenter(MasterDetailView mainViewController)
     {
         super(mainViewController);
     }
