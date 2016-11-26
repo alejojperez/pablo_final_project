@@ -1,11 +1,12 @@
 package core.base;
 
+import core.contracts.View;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
 import java.io.IOException;
 
-abstract public class BaseViewController<T extends BasePresenter>
+abstract public class BaseViewController<T extends BasePresenter> implements View<T>
 {
     /**
      * The view's presenter
@@ -14,12 +15,8 @@ abstract public class BaseViewController<T extends BasePresenter>
 
     /**
      * Constructor
-     * @param t
      */
-    public BaseViewController(T t)
-    {
-        this.presenter = t;
-    }
+    public BaseViewController() {}
 
     /**
      * The min height
@@ -32,7 +29,7 @@ abstract public class BaseViewController<T extends BasePresenter>
 
     /**
      * The min Width
-     * @return
+     * @return double
      */
     public double getMaxWidth()
     {
@@ -50,11 +47,20 @@ abstract public class BaseViewController<T extends BasePresenter>
 
     /**
      * The min Width
-     * @return
+     * @return double
      */
     public double getMinWidth()
     {
         return 0;
+    }
+
+    /**
+     * Get the view's presenter
+     * @return T
+     */
+    public T getPresenter()
+    {
+        return this.presenter;
     }
 
     /**
@@ -71,6 +77,15 @@ abstract public class BaseViewController<T extends BasePresenter>
      * @return String
      */
     public abstract String getTitle();
+
+    /**
+     * Set the view's presenter
+     * @param presenter
+     */
+    public void setPresenter(T presenter)
+    {
+        this.presenter = presenter;
+    }
 
     /**
      * Display the view

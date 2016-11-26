@@ -17,6 +17,7 @@ abstract public class BasePresenter<T extends BaseViewController> implements Pre
     public BasePresenter(T t)
     {
         this.viewController = t;
+        this.viewController.setPresenter(this);
     }
 
     /**
@@ -42,8 +43,7 @@ abstract public class BasePresenter<T extends BaseViewController> implements Pre
      */
     public void present()
     {
-        Stage stage = new Stage();
-        this.present(stage);
+        this.present(new Stage());
     }
 
     /**
