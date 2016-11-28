@@ -5,30 +5,29 @@ import app.models.Letter;
 import app.presenters.MasterDetailPresenter;
 import core.base.BaseViewController;
 import javafx.beans.binding.Bindings;
+import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleIntegerProperty;
-import javafx.beans.property.SimpleLongProperty;
-import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
-import javafx.beans.value.ChangeListener;
-import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
+import javafx.concurrent.Task;
 import javafx.event.ActionEvent;
-import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.*;
-import javafx.scene.input.MouseEvent;
+import javafx.scene.layout.AnchorPane;
 import javafx.util.Callback;
-
-import java.awt.print.Book;
 import java.net.URL;
 import java.util.ResourceBundle;
 
 public class MasterDetailView extends BaseViewController<MasterDetailPresenter> implements Initializable
 {
     //<editor-fold desc="FXML Components">
+    @FXML
+    public AnchorPane apLeftPane;
+    @FXML
+    public AnchorPane apRightPane;
     @FXML
     public TextField txtFind;
     @FXML
@@ -40,7 +39,17 @@ public class MasterDetailView extends BaseViewController<MasterDetailPresenter> 
     @FXML
     public TableColumn<Contact, String> tcContactName;
     @FXML
+    public Button btnAdd;
+    @FXML
     public Button btnDelete;
+    @FXML
+    public Button btnEdit;
+    @FXML
+    public Button btnSave;
+    @FXML
+    public Button btnCancel;
+    @FXML
+    public ProgressIndicator piLoading;
 
     @FXML
     public TextField txtFirstName;
@@ -74,6 +83,10 @@ public class MasterDetailView extends BaseViewController<MasterDetailPresenter> 
 
     //<editor-fold desc="Properties">
     protected FilteredList<Contact> filteredContacts;
+
+    protected SimpleBooleanProperty isEditing = new SimpleBooleanProperty(false);
+
+    protected SimpleBooleanProperty isLoading = new SimpleBooleanProperty(false);
     //</editor-fold>
 
     //<editor-fold desc="Selected Model">
@@ -117,6 +130,20 @@ public class MasterDetailView extends BaseViewController<MasterDetailPresenter> 
      */
     protected void initializeBinders()
     {
+        /**
+         * Left & Right Anchor Pane
+         */
+        this.apLeftPane.disableProperty().bind(
+            Bindings.or(
+                this.isEditing,
+                this.isLoading
+            )
+        );
+        this.apRightPane.disableProperty().bind(this.isLoading);
+
+        /**
+         * Table View selection
+         */
         this.tvContacts.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> {
             if(newValue == null)
                 this.resetSelectedModel();
@@ -124,11 +151,48 @@ public class MasterDetailView extends BaseViewController<MasterDetailPresenter> 
                 this.setSelectedModel((Contact) newValue);
         });
 
-        this.btnFind.disableProperty().bind(this.txtFind.textProperty().isEmpty());
-        this.btnDelete.disableProperty().bind(this.selected_id.greaterThan(0).not());
+        /**
+         * Button add contact
+         */
+        this.btnAdd.disableProperty().bind(this.isEditing);
 
         /**
-         * Bind the text fields
+         * Button cancel edition
+         */
+        this.btnCancel.disableProperty().bind(this.isEditing.not());
+
+        /**
+         * Button delete contact
+         */
+        this.btnDelete.disableProperty().bind(
+            Bindings.or(
+                this.selected_id.greaterThan(0).not(),
+                this.isEditing
+            )
+        );
+
+        /**
+         * Button edit contact
+         */
+        this.btnEdit.disableProperty().bind(
+            Bindings.or(
+                    this.selected_id.greaterThan(0).not(),
+                    this.isEditing
+            )
+        );
+
+        /**
+         * Button find based on search criteria
+         */
+        this.btnFind.disableProperty().bind(this.txtFind.textProperty().isEmpty());
+
+        /**
+         * Button save contact
+         */
+        this.btnSave.disableProperty().bind(this.isEditing.not());
+
+        /**
+         * Bind the text property of text fields
          */
         this.txtFirstName.textProperty().bindBidirectional(this.selected_first_name);
         this.txtMiddleName.textProperty().bindBidirectional(this.selected_middle_name);
@@ -144,6 +208,29 @@ public class MasterDetailView extends BaseViewController<MasterDetailPresenter> 
         this.txtPersonalEmail.textProperty().bindBidirectional(this.selected_personal_email);
         this.txtSchoolEmail.textProperty().bindBidirectional(this.selected_school_email);
         this.txtWorkEmail.textProperty().bindBidirectional(this.selected_work_email);
+
+        /**
+         * Bind the disabled property of text fields
+         */
+        this.txtFirstName.disableProperty().bind(this.isEditing.not());
+        this.txtMiddleName.disableProperty().bind(this.isEditing.not());
+        this.txtLastName.disableProperty().bind(this.isEditing.not());
+        this.txtCountry.disableProperty().bind(this.isEditing.not());
+        this.txtState.disableProperty().bind(this.isEditing.not());
+        this.txtCity.disableProperty().bind(this.isEditing.not());
+        this.txtZip.disableProperty().bind(this.isEditing.not());
+        this.txtAddress.disableProperty().bind(this.isEditing.not());
+        this.txtHomePhone.disableProperty().bind(this.isEditing.not());
+        this.txtMobilePhone.disableProperty().bind(this.isEditing.not());
+        this.txtWorkPhone.disableProperty().bind(this.isEditing.not());
+        this.txtPersonalEmail.disableProperty().bind(this.isEditing.not());
+        this.txtSchoolEmail.disableProperty().bind(this.isEditing.not());
+        this.txtWorkEmail.disableProperty().bind(this.isEditing.not());
+
+        /**
+         * Bind the progress indicator
+         */
+        this.piLoading.visibleProperty().bind(this.isLoading);
     }
 
     /**
@@ -157,9 +244,7 @@ public class MasterDetailView extends BaseViewController<MasterDetailPresenter> 
         this.tcContactName.setCellValueFactory(
                 (TableColumn.CellDataFeatures<Contact, String> cell) -> new SimpleStringProperty(cell.getValue().fullName())
         );
-        ObservableList<Contact> contacts = FXCollections.observableList(this.getPresenter().getContactsList());
-        this.filteredContacts = new FilteredList<>(contacts, contact -> true);
-        this.tvContacts.setItems(this.filteredContacts);
+        this.loadContacts();
 
         /**
          * Set up the list containing all the letters
@@ -199,6 +284,37 @@ public class MasterDetailView extends BaseViewController<MasterDetailPresenter> 
 
     //<editor-fold desc="View Functionalities">
     /**
+     * Add contact
+     * @param event
+     */
+    public void add(ActionEvent event)
+    {
+        this.tvContacts.getSelectionModel().select(-1);
+        this.isEditing.setValue(true);
+    }
+
+    /**
+     * Cancel the editing
+     * @param event
+     */
+    public void cancel(ActionEvent event)
+    {
+        this.isEditing.setValue(false);
+
+        if(selected_id.getValue() == 0)
+            this.resetSelectedModel();
+    }
+
+    /**
+     * Set the editing property to true
+     * @param event
+     */
+    public void edit(ActionEvent event)
+    {
+        this.isEditing.setValue(true);
+    }
+
+    /**
      * Filter contacts based on search criteria
      * @param event
      */
@@ -209,6 +325,27 @@ public class MasterDetailView extends BaseViewController<MasterDetailPresenter> 
             this.lvAlphabet.getSelectionModel().clearSelection();
             this.filteredContacts.setPredicate(contact -> contact.fullName().toLowerCase().contains(this.txtFind.getText().toLowerCase()));
         }
+    }
+
+    /**
+     * Save the contact to the database
+     * @param event
+     */
+    public void save(ActionEvent event)
+    {
+        Task<Contact> task = this.getSaveTask();
+
+        this.isLoading.bind(task.runningProperty());
+        this.isEditing.bind(task.runningProperty());
+
+        task.onSucceededProperty().addListener((observable -> {
+            /**
+             * If new contact, add the contact to the list
+             */
+            this.filteredContacts.add(task.getValue());
+        }));
+
+        new Thread(task).start();
     }
     //</editor-fold>
 
@@ -233,6 +370,54 @@ public class MasterDetailView extends BaseViewController<MasterDetailPresenter> 
     //</editor-fold>
 
     //<editor-fold desc="Helpers">
+    /**
+     * Obtain the save task
+     * @return
+     */
+    protected Task<Contact> getSaveTask()
+    {
+        return new Task<Contact>()
+        {
+            @Override
+            protected Contact call() throws Exception
+            {
+                Contact contact = new Contact();
+                contact.set("first_name", selected_first_name);
+                contact.set("middle_name", selected_middle_name);
+                contact.set("last_name", selected_first_name);
+                contact.set("work_phone", selected_work_phone);
+                contact.set("mobile_phone", selected_mobile_phone);
+                contact.set("home_phone", selected_home_phone);
+                contact.set("personal_email", selected_personal_email);
+                contact.set("work_email", selected_work_email);
+                contact.set("school_email", selected_school_email);
+                contact.set("country", selected_country);
+                contact.set("state", selected_state);
+                contact.set("city", selected_city);
+                contact.set("zip", selected_zip);
+                contact.set("address", selected_address);
+
+                if(selected_id.getValue() > 0)
+                {
+                    contact.set("id", selected_id);
+                    return getPresenter().editContact(contact);
+                }
+                else
+                    return getPresenter().createContact(contact);
+            }
+        };
+    }
+
+    /**
+     * Load the contact list from DB
+     */
+    protected void loadContacts()
+    {
+        ObservableList<Contact> contacts = FXCollections.observableList(this.getPresenter().getContactsList());
+        this.filteredContacts = new FilteredList<>(contacts, contact -> true);
+        this.tvContacts.setItems(this.filteredContacts);
+    }
+
     /**
      * Reset the selected model values
      */

@@ -21,6 +21,17 @@ public class MasterDetailPresenter extends BasePresenter<MasterDetailView>
     }
 
     /**
+     * Edit contact
+     * @param contact
+     * @return
+     */
+    public Contact editContact(Contact contact)
+    {
+        contact.saveIt();
+        return contact;
+    }
+
+    /**
      * Get a list of all contacts
      * @return
      */
@@ -36,5 +47,16 @@ public class MasterDetailPresenter extends BasePresenter<MasterDetailView>
     public List<Letter> getLettersList()
     {
         return Letter.findAll();
+    }
+
+    /**
+     * Create contact
+     * @param contact
+     * @return
+     */
+    public Contact createContact(Contact contact)
+    {
+        contact.saveIt();
+        return contact;
     }
 }
