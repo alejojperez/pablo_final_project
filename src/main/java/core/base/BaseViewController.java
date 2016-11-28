@@ -1,5 +1,6 @@
 package core.base;
 
+import app.presenters.MasterDetailPresenter;
 import core.contracts.View;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
@@ -97,7 +98,10 @@ abstract public class BaseViewController<T extends BasePresenter> implements Vie
 
         try
         {
-            stage.setScene(new Scene(FXMLLoader.load(getClass().getResource(name))));
+            FXMLLoader loader = new FXMLLoader(getClass().getResource(name));
+            loader.setController(this);
+
+            stage.setScene(new Scene(loader.load()));
 
             stage.setResizable(this.getResizable());
             stage.setTitle(this.getTitle());
