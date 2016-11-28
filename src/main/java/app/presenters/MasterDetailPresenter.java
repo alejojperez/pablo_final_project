@@ -1,5 +1,6 @@
 package app.presenters;
 
+import app.models.Contact;
 import app.models.Letter;
 import app.views.MasterDetailView;
 import com.google.inject.Inject;
@@ -17,6 +18,15 @@ public class MasterDetailPresenter extends BasePresenter<MasterDetailView>
     public MasterDetailPresenter(MasterDetailView mainViewController)
     {
         super(mainViewController);
+    }
+
+    /**
+     * Get a list of all contacts
+     * @return
+     */
+    public List<Contact> getContactsList()
+    {
+        return Contact.findAll();
     }
 
     /**
